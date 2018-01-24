@@ -70,6 +70,7 @@ else:
 
 import gzip
 import smart_open.s3 as smart_open_s3
+import smart_open.gcp as smart_open_gcs
 
 
 WEBHDFS_MIN_PART_SIZE = 50 * 1024**2  # minimum part size for HDFS multipart uploads
@@ -176,6 +177,8 @@ def smart_open(uri, mode="rb", **kw):
             return file_smart_open(parsed_uri.uri_path, mode, encoding=encoding, errors=errors)
         elif parsed_uri.scheme in ("s3", "s3n", 's3u'):
             return s3_open_uri(parsed_uri, mode, **kw)
+        elif parsed_uri.scheme in ("gs"):
+            return gcs_open_uri(parsed_uri, mode, **kw)
         elif parsed_uri.scheme in ("hdfs", ):
             encoding = kw.pop('encoding', None)
             if encoding is not None:
@@ -261,6 +264,11 @@ def s3_open_uri(parsed_uri, mode, **kwargs):
     decompressed_fobj = _CODECS[codec](fobj, mode)
     decoded_fobj = encoding_wrapper(decompressed_fobj, mode, encoding=encoding, errors=errors)
     return decoded_fobj
+
+
+def gcs_open_uri(parsed_uri, mode, **kwargs):
+    
+
 
 
 def _setup_unsecured_mode(parsed_uri, kwargs):
@@ -418,6 +426,11 @@ class ParseUri(object):
                 # Bucket names can contain lowercase letters, numbers, and hyphens.
                 # Each label must start and end with a lowercase letter or a number.
                 raise RuntimeError("invalid S3 URI: %s" % uri)
+        elif self.scheme == 'gs':
+            self.bucket_id = parsed_uri.netloc
+            # In Google Cloud Storage, the convention is to call this either "file_path" or "blob_name" but for the
+            # sake of a more unified interface we'll stick with calling this part of the URI "key_id"
+            self.key_id = parsed_uri.path.split('/', 1)[0] #  Removes initial backslash from key/blob id/name
         elif self.scheme == 'file':
             self.uri_path = parsed_uri.netloc + parsed_uri.path
 
