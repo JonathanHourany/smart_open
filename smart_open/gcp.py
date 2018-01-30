@@ -40,7 +40,7 @@ def open(bucket_name, blob_name, mode, **kwargs):
     # if mode in (READ, READ_BINARY):
     #     fileobj = SeekableBufferedInputBase(bucket_name, blob_name, **kwargs)
     if mode in (WRITE, WRITE_BINARY):
-        fileobj = SeekableBufferedGCSOutputBase(bucket_name, blob_name, upload_chunk=upload_chunk_size, **kwargs)
+        fileobj = SeekableBufferedGCSOutputBase(bucket_name, blob_name, upload_chunk_size=upload_chunk_size, **kwargs)
     else:
         raise NotImplementedError("{mode} is not supported".format(mode=mode))
 
@@ -78,7 +78,8 @@ class SeekableBufferedGCSOutputBase(io.BufferedIOBase):
         self._total_parts = 0
         self.raw = None
 
-        self._upload.initiate(self._transport, self, metadata, content_type=content_type, stream_final=False)
+        self._upload.initiate(transport=self._transport, stream=self, metadata=metadata, content_type=content_type,
+                              stream_final=False)
 
     # --------------------------------------
     # Function overrides from io.IOBase
@@ -113,7 +114,7 @@ class SeekableBufferedGCSOutputBase(io.BufferedIOBase):
         SEEK_END or 2 – end of the stream; offset is usually negative
         Return the new absolute position.
         """
-        delta = - self._buf.tell() + self._buf.seek(offset, whence)
+        delta = -1*self._buf.tell() + self._buf.seek(offset, whence)
         self._upload_position += delta
         return self.tell()
 
