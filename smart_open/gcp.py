@@ -7,7 +7,7 @@ from google.cloud import storage
 from google.resumable_media.requests import ResumableUpload
 from google.resumable_media import UPLOAD_CHUNK_SIZE
 from google.cloud.storage.blob import _RESUMABLE_URL_TEMPLATE
-from booklawyer.gcp import get_storage_client
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
