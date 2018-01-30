@@ -293,6 +293,7 @@ def gcs_open_uri(parsed_uri, mode, **kwargs):
     encoding = kwargs.get('encoding')
     errors = kwargs.get('errors', DEFAULT_ERRORS)
     fobj = smart_open_gcs.open(parsed_uri.bucket_id, parsed_uri.key_id, gcs_mode, **kwargs)
+    decompressed_fobj = _CODECS[codec](fobj, mode)
     decoded_fobj = encoding_wrapper(decompressed_fobj, mode, encoding=encoding, errors=errors)
     return decoded_fobj
 
@@ -456,7 +457,7 @@ class ParseUri(object):
             self.bucket_id = parsed_uri.netloc
             # In Google Cloud Storage, the convention is to call this either "file_path" or "blob_name" but for the
             # sake of a more unified interface we'll stick with calling this part of the URI "key_id"
-            self.key_id = parsed_uri.path.split('/', 1)[0] #  Removes initial backslash from key/blob id/name
+            self.key_id = parsed_uri.path[1:] #  Removes initial backslash from key/blob id/name
         elif self.scheme == 'file':
             self.uri_path = parsed_uri.netloc + parsed_uri.path
 
