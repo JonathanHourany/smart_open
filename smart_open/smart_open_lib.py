@@ -267,8 +267,34 @@ def s3_open_uri(parsed_uri, mode, **kwargs):
 
 
 def gcs_open_uri(parsed_uri, mode, **kwargs):
-    
+    logger.debug('%r', locals())
+    #
+    # TODO: this is the wrong place to handle ignore_extension.
+    # It should happen at the highest level in the smart_open function, because
+    # it influences other file systems as well, not just S3.
+    #
+    if kwargs.pop("ignore_extension", False):
+        codec = None
+    else:
+        codec = _detect_codec(parsed_uri.key_id)
 
+    #
+    # Codecs work on a byte-level, so the underlying S3 object should
+    # always be reading bytes.
+    #
+    if mode in (smart_open_s3.READ, smart_open_s3.READ_BINARY):
+        gcs_mode = smart_open_gcs.READ_BINARY
+    elif mode in (smart_open_gcs.WRITE, smart_open_s3.WRITE_BINARY):
+        gcs_mode = smart_open_gcs.WRITE_BINARY
+    else:
+        raise NotImplementedError('mode %r not implemented for GCS' % mode)
+
+
+    encoding = kwargs.get('encoding')
+    errors = kwargs.get('errors', DEFAULT_ERRORS)
+    fobj = smart_open_gcs.open(parsed_uri.bucket_id, parsed_uri.key_id, gcs_mode, **kwargs)
+    decoded_fobj = encoding_wrapper(decompressed_fobj, mode, encoding=encoding, errors=errors)
+    return decoded_fobj
 
 
 def _setup_unsecured_mode(parsed_uri, kwargs):
